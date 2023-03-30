@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"publicChain/part6-bolt-update-block/blc"
+	"publicChain/part7-bolt-select-block/blc"
 
 	"github.com/boltdb/bolt"
 )
@@ -23,4 +23,5 @@ func main() {
 
 	blockChain.AddBlockToBlockChain("send 1000rmb to dongzhi", blockChain.Blocks[len(blockChain.Blocks)-1].Heigth+1, blockChain.Blocks[len(blockChain.Blocks)-1].Hash, db)
 
+	blc.GetAllBlock(db, []byte("l"))
 }

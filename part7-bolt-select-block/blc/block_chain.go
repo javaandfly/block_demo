@@ -38,27 +38,17 @@ func DeserializeBlock(blockBytes []byte) *Block {
 	return &block
 }
 
-func (blockChain *BlockChain) AddBlockToBlockChain(date string, height int64, prevHash []byte) {
+func (blockChain *BlockChain) AddBlockToBlockChain(date string, height int64, prevHash []byte, db *bolt.DB) {
 	newBlock := NewBlock(date, height, prevHash)
 
-	db, err := bolt.Open("my.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("BlockBucket"))
-		if err != nil || b == nil {
-			return fmt.Errorf("create bucket:  %s", err)
+		if b == nil {
+			return fmt.Errorf("not find table")
 		}
 
 		blockBytes := newBlock.Serialize()
-		err = b.Put([]byte(newBlock.Hash), blockBytes)
-		if err != nil {
-			return err
-		}
-
-		err := b.Delete([]byte("l"))
+		err := b.Put([]byte(newBlock.Hash), blockBytes)
 		if err != nil {
 			return err
 		}
@@ -75,15 +65,10 @@ func (blockChain *BlockChain) AddBlockToBlockChain(date string, height int64, pr
 	blockChain.Blocks = append(blockChain.Blocks, newBlock)
 }
 
-func CreateBlockChainWithGenesisBlock() *BlockChain {
+func CreateBlockChainWithGenesisBlock(db *bolt.DB) *BlockChain {
 	genesisBlock := CreateGenesisBlock("Genesis block")
 
-	db, err := bolt.Open("my.db", 0600, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-	err = db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucket([]byte("BlockBucket"))
 		if err != nil || b == nil {
 			return fmt.Errorf("create bucket:  %s", err)
