@@ -13,6 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 	blockChain := blc.CreateBlockChainWithGenesisBlock(db)
 
 	blockChain.AddBlockToBlockChain("send 100rmb to dongzhi", blockChain.Blocks[len(blockChain.Blocks)-1].Heigth+1, blockChain.Blocks[len(blockChain.Blocks)-1].Hash, db)
