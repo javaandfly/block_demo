@@ -8,6 +8,7 @@ type TXInput struct {
 	ScriptSig string //username
 }
 
-func NewTXInput() {
+func (txInput *TXInput) UnLockWithAddress(address string) bool {
 
+	return txInput.ScriptSig == address
 }

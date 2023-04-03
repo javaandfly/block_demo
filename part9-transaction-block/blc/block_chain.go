@@ -3,6 +3,7 @@ package blc
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -116,4 +117,110 @@ func CreateBlockChainWithGenesisBlock(db *bolt.DB, address string) *BlockChain {
 		log.Panic(err)
 	}
 	return &BlockChain{[]*Block{genesisBlock}}
+}
+
+func GetUTXOWithAddress(db *bolt.DB, prveBlockHash []byte, address string, inMap map[string][]int64, unUTXOs []*TXOutput) error {
+	block := &Block{}
+	err := db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("BlockBucket"))
+		if b == nil {
+			return fmt.Errorf("not find Bucket")
+		}
+		if bytes.Equal([]byte("l"), prveBlockHash) {
+			date := b.Get([]byte("l"))
+			blockBytes := b.Get(date)
+			block = DeserializeBlock(blockBytes)
+			block.PrintfBlock()
+			for _, tx := range block.Txs {
+				for _, in := range tx.Vins {
+					if in.UnLockWithAddress(address) {
+						key := hex.EncodeToString(in.TxHash)
+
+						inMap[key] = append(inMap[key], in.Vout)
+					}
+				}
+
+				for index, out := range tx.Vouts {
+					if out.UnLockScriptPubKeyWithAddress(address) {
+						if len(inMap) != 0 {
+							for txHash, indexArrat := range inMap {
+								if txHash == hex.EncodeToString(tx.TxHash) {
+									for _, i := range indexArrat {
+										if int64(index) == i {
+											continue
+										} else {
+											unUTXOs = append(unUTXOs, out)
+										}
+									}
+								} else {
+									unUTXOs = append(unUTXOs, out)
+								}
+							}
+						} else {
+							unUTXOs = append(unUTXOs, out)
+						}
+					}
+				}
+			}
+			GetUTXOWithAddress(db, block.PrevBlockHash, address, inMap, unUTXOs)
+		} else {
+
+			if bytes.Equal(prveBlockHash, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}) {
+
+				return nil
+			}
+
+			date := b.Get(prveBlockHash)
+			block = DeserializeBlock(date)
+			block.PrintfBlock()
+			for _, tx := range block.Txs {
+				for _, in := range tx.Vins {
+					if in.UnLockWithAddress(address) {
+						key := hex.EncodeToString(in.TxHash)
+
+						inMap[key] = append(inMap[key], in.Vout)
+					}
+				}
+
+				for index, out := range tx.Vouts {
+					if out.UnLockScriptPubKeyWithAddress(address) {
+						if len(inMap) != 0 {
+							for txHash, indexArrat := range inMap {
+								if txHash == hex.EncodeToString(tx.TxHash) {
+									for _, i := range indexArrat {
+										if int64(index) == i {
+											continue
+										} else {
+											unUTXOs = append(unUTXOs, out)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			GetUTXOWithAddress(db, block.PrevBlockHash, address, inMap, unUTXOs)
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Panic(err)
+	}
+	return nil
+}
+
+func GetBanlance(db *bolt.DB, address string, prveBlockHash []byte) int64 {
+	inMap := make(map[string][]int64)
+	UTXOs := []*TXOutput{}
+	err := GetUTXOWithAddress(db, prveBlockHash, address, inMap, UTXOs)
+	if err != nil {
+		log.Panic(err)
+	}
+	var money int64
+	for _, UTXO := range UTXOs {
+		money = money + UTXO.Value
+	}
+	return money
 }
