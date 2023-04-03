@@ -17,6 +17,10 @@ type Transaction struct {
 	Vouts []*TXOutput
 }
 
+func (tx *Transaction) IsCionbaseTransaction() bool {
+	return len(tx.Vins[0].TxHash) == 0 && tx.Vins[0].Vout == -1
+}
+
 func (transaction *Transaction) HashTransaction() {
 	var result bytes.Buffer
 

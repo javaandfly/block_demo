@@ -52,6 +52,7 @@ func GetAllBlock(db *bolt.DB, prveBlockHash []byte) error {
 
 				return nil
 			}
+
 			date := b.Get(prveBlockHash)
 			block = DeserializeBlock(date)
 			block.PrintfBlock()

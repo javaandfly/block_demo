@@ -60,7 +60,7 @@ func RunBlcokCli() {
 						sendMessage.Amount = strings.Split(amountString, ",")
 					}
 
-					// blc.AddBlockToBlockChain(sendMessage, db)
+					blc.AddBlockToBlockChain(sendMessage, db)
 					return nil
 				},
 			},
