@@ -1,0 +1,1 @@
+Added the calculation of the balance of an address
